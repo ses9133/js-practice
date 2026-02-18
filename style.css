@@ -1,19 +1,108 @@
-* {
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box; 
-}
-
 a {
   text-decoration: none;
   color: inherit;
+  font-family: Arial, sans-serif;
+}
+
+@font-face {
+    font-family: 'Mulmaru';
+    src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/2601-4@1.1/Mulmaru.woff2') format('woff2');
+    font-weight: normal;
+    font-display: swap;
+}
+
+:root {
+  --bs-body-font-family: 'Mulmaru';
+  --my-secondary: #F9DFDF;
+  --my-primary: #F5AFAF;
+  --my-1: #FD7979;
+  --pink-muted: #FFCDC9;
+  --pink: #FDACAC;
+  --skin: #FEEAC9;
+}
+
+.title {
+  padding: 1rem;
+  color: var(--my-1);
+  margin: 0.5rem auto;
+  background-color: var(--skin);
+  border-radius: 50px;
+}
+
+button {
+  border: none;
+  border-radius: 10px !important;
+  padding: 0.3rem;
 }
 
 ul, ol {
   list-style: none;
 }
 
+.shop-input {
+  padding: 0.3rem;
+  border-radius: 5px;
+  border: 1px solid #ccc;
+}
+
 .map {
-  width: 500px;
-  height: 400px;
+  width: 600px;
+  height: 500px;
+}
+
+body {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  text-align: center !important;  
+  gap: 1.5rem;
+}
+
+.map-container {
+  margin: 0 auto;
+  display: flex; 
+  flex-direction: row;
+  gap: 1.5rem;
+  border-top: 1px solid var(--pink-muted);
+}
+
+.result-list {
+  text-align: left;
+}
+
+.result-element {
+  padding: 0.5rem 0;
+}
+
+.save-btn-container {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.category-container {
+  margin: 0 auto;
+  width: 50%;
+}
+
+.category-list {
+  padding: 0.7rem 1rem;
+  font-size: 1rem;
+  background-color: var(--pink);
+  margin: 0.3rem;
+}
+
+.add-btn {
+  color: var(--pink);
+}
+
+.category-btn {
+  color: var(--pink);
+}
+
+.search-list small {
+  color: var(--pink-muted);
+}
+
+.add-save-btn {
+  color: var(--my-primary);
 }
