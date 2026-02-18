@@ -2,6 +2,9 @@ const input = document.getElementById('shop-input');
 const searchBtn = document.getElementById('search-btn');
 const list = document.getElementById('list-container');
 
+const selectModal = new bootstrap.Modal(document.getElementById('categorySelectModal'));
+const selectCategoryList = document.getElementById('select-category-list');
+
 // 마커를 클릭하면 장소명을 표출할 인포윈도우 입니다
 var infowindow = new kakao.maps.InfoWindow({zIndex:1});
 
@@ -11,34 +14,37 @@ var mapContainer = document.getElementById('map'), // 지도를 표시할 div
         level: 3 // 지도의 확대 레벨
     };  
 
-// 지도를 생성합니다    
+// 지도 생성  
 var map = new kakao.maps.Map(mapContainer, mapOption); 
 
-// 장소 검색 객체를 생성합니다
+// 장소 검색 객체 생성
 var ps = new kakao.maps.services.Places(); 
 
 searchBtn.addEventListener('click', () => {
   const keyword = input.value;
   if(!keyword) return;
 
-  // 키워드로 장소를 검색합니다
+  // 키워드로 장소를 검색
   ps.keywordSearch(keyword, placesSearchCB);
 });
 
 const resultList = document.getElementById('result-list');
 
-// 키워드 검색 완료 시 호출되는 콜백함수 입니다
+// 키워드 검색 완료 시 호출되는 콜백함수
 function placesSearchCB (data, status) {
     if (status === kakao.maps.services.Status.OK) {
         resultList.innerHTML = '';
 
         data.forEach(place => {
           const li = document.createElement('li');
+          li.className = 'search-list';
           li.style.cursor = 'pointer';
           li.innerHTML = `
             <strong>${place.place_name}</strong><br>
             <small>${place.address_name}</small><br>
-            <button class="add-save-btn">등록</button>
+            <div class=save-btn-container>
+            <button class="add-save-btn" type="button" data-bs-toggle="modal" data-bs-target="#categorySelectModal">등록</button>
+            </div>
           `;
           li.addEventListener('click', () => {
           const moveLatLon = new kakao.maps.LatLng(place.y, place.x);
@@ -47,6 +53,7 @@ function placesSearchCB (data, status) {
 
           displayMarker(place);
         });
+        li.classList.add('result-element');
 
         const saveBtn = li.querySelector('.add-save-btn');
         saveBtn.addEventListener('click', (e) => {
@@ -59,18 +66,18 @@ function placesSearchCB (data, status) {
     } 
 }
 
-// 지도에 마커를 표시하는 함수입니다
+// 지도에 마커를 표시하는 함수
 function displayMarker(place) {
     
-    // 마커를 생성하고 지도에 표시합니다
+    // 마커를 생성하고 지도에 표시
     var marker = new kakao.maps.Marker({
         map: map,
         position: new kakao.maps.LatLng(place.y, place.x) 
     });
 
-    // 마커에 클릭이벤트를 등록합니다
+    // 마커에 클릭이벤트를 등록
     kakao.maps.event.addListener(marker, 'click', function() {
-        // 마커를 클릭하면 장소명이 인포윈도우에 표출됩니다
+        // 마커를 클릭하면 장소명이 인포윈도우에 표출
         infowindow.setContent('<div style="padding:5px;font-size:12px;">' + place.place_name + '</div>');
         infowindow.open(map, marker);
     });
@@ -78,19 +85,33 @@ function displayMarker(place) {
 
 let shops = JSON.parse(localStorage.getItem('myShops')) || [];
 
-function render() {
+function render(filterCategory = null) {
   list.innerHTML = '';
-  shops.forEach((shop, index) => {
-    const li = document.createElement('li');
-    li.innerHTML = `
-    <div>
-      <strong>${shop.placeName}</strong>
-      <small>${shop.placeAddress}</small>
-      <button class="delete-btn" onclick="deleteShop(${index})">삭제</button>
-    </div>
+
+  const displayShops = filterCategory
+    ? shops.filter(shop => shop.category == filterCategory)
+    : [];
+
+    if(displayShops.length === 0 && filterCategory) { // filterCategory === true 의미: 배지를 클릭했을때
+      list.innerHTML = `<li>등록된 장소가 없습니다.</li>`;
+      return;
+    }
+
+    displayShops.forEach((shop, index) => {
+      const realIndex = shops.findIndex(s => s === shop); // 추출된 가게들에서의 인덱스가 아닌 진짜 기존 인덱스가 있어야 삭제할 때 안꼬임
+
+      const li = document.createElement('li');
+      li.innerHTML = `
+      <div class="shop-item">
+        <span class="badge rounded-pill category-list">${shop.category}</span>
+        <strong>${shop.placeName}</strong>
+        <small>${shop.placeAddress}</small>
+        <button class="delete-btn" onclick="deleteShop(${realIndex})">삭제</button>
+      </div>
     `;
+
     list.appendChild(li);
-  });
+    });
 }
 
 function saveData() {
@@ -100,19 +121,108 @@ function saveData() {
 function deleteShop(index) {
   shops.splice(index, 1); // splice(변경시작할 인덱스, 제거할 요소의 수)
   saveData();
-  render();
+  render(null);
 }
 
-render();
+let categories = JSON.parse(localStorage.getItem('myCategories')) || [];
+let tempPlace = null; 
+
+function renderSelectCategories() {
+  selectCategoryList.innerHTML = '';
+  if(categories.length === 0) {
+    alert('카테고리 등록 먼저 해주세요');
+    return;
+  }
+
+  categories.forEach(cat => {
+    const btn = document.createElement('button');
+    btn.className = 'badge rounded-pill category-list';
+    btn.textContent = cat;
+
+    btn.onclick = () => {
+      shops.push({
+        placeName: tempPlace.place_name,
+        placeAddress: tempPlace.address_name,
+        category: cat
+      });
+
+      saveData();
+      render();
+      selectModal.hide();
+      alert(`${tempPlace.place_name}(이)가 [${cat}]카테고리에 등록되었습니다.`);
+      tempPlace = null;
+    };
+    selectCategoryList.appendChild(btn);
+  })
+}
 
 function addPlace(place) {
-  shops.push({
-    placeName: place.place_name,
-    placeAddress: place.address_name
-  })
-  saveData();
-
-  render();
-
-  alert(`${place.place_name}이(가) 등록되었습니다.`);
+  tempPlace = place;
+  renderSelectCategories();
+  selectModal.show();
 }
+
+const categoryAddBtn = document.getElementById('categoryAddBtn');
+const categoryContainer = document.getElementById('categoryContainer');
+const modalCategoryContainer = document.getElementById('modalCategoryContainer');
+
+categoryAddBtn.addEventListener('click', () => {
+    const input = document.getElementById('category');
+    const value = input.value.trim();
+    if(!value) {
+      alert('카테고리를 작성해주세요');
+      return;
+    }
+    const div = document.createElement('div');
+    div.className = 'badge rounded-pill category-list';
+    div.textContent = value;
+    div.style.cursor = 'pointer';
+    categoryContainer.appendChild(div);
+    input.value = "";
+
+    categories.push(value);
+    saveCateogories();
+    renderCategories();
+});
+
+
+function renderCategories() {
+  categoryContainer.innerHTML = '';
+  if(modalCategoryContainer) modalCategoryContainer.innerHTML = '';
+
+  categories.forEach((cat, index) => {
+    const div = document.createElement('div');
+    div.className = 'badge rounded-pill category-list';
+    div.textContent = cat;
+    div.style.cursor = 'pointer';
+
+    div.onclick = () => {
+      render(cat);
+    }
+
+    categoryContainer.appendChild(div);
+
+    if(modalCategoryContainer) {
+      const modalDiv = document.createElement('div');
+      modalDiv.className = 'badge rounded-pill category-list';
+      modalDiv.innerHTML = `${cat} <i class="fa-solid fa-x"></i>`;
+      modalDiv.style.cursor = 'pointer';
+      modalDiv.onclick = () => {
+        if(confirm('해당 카테고리를 삭제하시겠습니까?')) {
+          categories.splice(index, 1);
+          saveCateogories();
+        } else {
+          return;
+        }
+        renderCategories();
+      };
+      modalCategoryContainer.appendChild(modalDiv);
+    }
+  });
+}
+
+function saveCateogories() {
+  localStorage.setItem('myCategories', JSON.stringify(categories));
+}
+
+renderCategories();
