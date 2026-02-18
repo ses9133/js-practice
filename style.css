@@ -22,7 +22,7 @@ a {
 }
 
 .title {
-  padding: 1rem;
+  padding: 1rem 1.5rem;
   color: var(--my-1);
   margin: 0.5rem auto;
   background-color: var(--skin);
