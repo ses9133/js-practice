@@ -1,13 +1,11 @@
-const input = document.getElementById('shop-input');
-const searchBtn = document.getElementById('search-btn');
-const list = document.getElementById('list-container');
+// 로컬 스토리지용
+let shops = JSON.parse(localStorage.getItem('myShops')) || [];
+let categories = JSON.parse(localStorage.getItem('myCategories')) || [];
+let tempPlace = null; // 등록 대기 중인 장소 임시 보관용
 
-const selectModal = new bootstrap.Modal(document.getElementById('categorySelectModal'));
-const selectCategoryList = document.getElementById('select-category-list');
-
+// 카카오 지도 설정 및 마커 표시
 // 마커를 클릭하면 장소명을 표출할 인포윈도우 입니다
 var infowindow = new kakao.maps.InfoWindow({zIndex:1});
-
 var mapContainer = document.getElementById('map'), // 지도를 표시할 div 
     mapOption = {
         center: new kakao.maps.LatLng(37.566826, 126.9786567), // 지도의 중심좌표
@@ -16,10 +14,12 @@ var mapContainer = document.getElementById('map'), // 지도를 표시할 div
 
 // 지도 생성  
 var map = new kakao.maps.Map(mapContainer, mapOption); 
-
 // 장소 검색 객체 생성
 var ps = new kakao.maps.services.Places(); 
 
+const input = document.getElementById('shop-input');
+const searchBtn = document.getElementById('search-btn');
+// 검색 버튼 이벤트 로직
 searchBtn.addEventListener('click', () => {
   const keyword = input.value;
   if(!keyword) return;
@@ -46,6 +46,8 @@ function placesSearchCB (data, status) {
             <button class="add-save-btn" type="button" data-bs-toggle="modal" data-bs-target="#categorySelectModal">등록</button>
             </div>
           `;
+
+          // 지도 이동 이벤트
           li.addEventListener('click', () => {
           const moveLatLon = new kakao.maps.LatLng(place.y, place.x);
           map.panTo(moveLatLon);
@@ -55,6 +57,7 @@ function placesSearchCB (data, status) {
         });
         li.classList.add('result-element');
 
+        // 등록 버튼 이벤트
         const saveBtn = li.querySelector('.add-save-btn');
         saveBtn.addEventListener('click', (e) => {
           e.stopPropagation();
@@ -83,8 +86,8 @@ function displayMarker(place) {
     });
 }
 
-let shops = JSON.parse(localStorage.getItem('myShops')) || [];
-
+const list = document.getElementById('list-container');
+// 화면 렌더링(카테고리에 맞게)
 function render(filterCategory = null) {
   list.innerHTML = '';
 
@@ -114,8 +117,11 @@ function render(filterCategory = null) {
     });
 }
 
-function saveData() {
-  localStorage.setItem('myShops', JSON.stringify(shops));
+const selectModal = new bootstrap.Modal(document.getElementById('categorySelectModal'));
+function addPlace(place) {
+  tempPlace = place;
+  renderSelectCategories();
+  selectModal.show();
 }
 
 function deleteShop(index) {
@@ -124,9 +130,12 @@ function deleteShop(index) {
   render(null);
 }
 
-let categories = JSON.parse(localStorage.getItem('myCategories')) || [];
-let tempPlace = null; 
+function saveData() {
+  localStorage.setItem('myShops', JSON.stringify(shops));
+}
 
+const selectCategoryList = document.getElementById('select-category-list');
+// 장소 선택후 카테고리 선택시 렌더링 함수
 function renderSelectCategories() {
   selectCategoryList.innerHTML = '';
   if(categories.length === 0) {
@@ -153,13 +162,7 @@ function renderSelectCategories() {
       tempPlace = null;
     };
     selectCategoryList.appendChild(btn);
-  })
-}
-
-function addPlace(place) {
-  tempPlace = place;
-  renderSelectCategories();
-  selectModal.show();
+  });
 }
 
 const categoryAddBtn = document.getElementById('categoryAddBtn');
@@ -185,7 +188,7 @@ categoryAddBtn.addEventListener('click', () => {
     renderCategories();
 });
 
-
+// 카테고리 렌더링
 function renderCategories() {
   categoryContainer.innerHTML = '';
   if(modalCategoryContainer) modalCategoryContainer.innerHTML = '';
@@ -211,10 +214,10 @@ function renderCategories() {
         if(confirm('해당 카테고리를 삭제하시겠습니까?')) {
           categories.splice(index, 1);
           saveCateogories();
+          renderCategories(); // 삭제시 특정 요소를 지우는것이 아니라, 전체 화면을 담당하는 rednerCategories()를 재호출하는 방식
         } else {
           return;
         }
-        renderCategories();
       };
       modalCategoryContainer.appendChild(modalDiv);
     }
@@ -225,4 +228,5 @@ function saveCateogories() {
   localStorage.setItem('myCategories', JSON.stringify(categories));
 }
 
+// 실행
 renderCategories();
